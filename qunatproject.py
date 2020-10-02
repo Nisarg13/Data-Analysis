@@ -1,9 +1,11 @@
 import pandas as pd
 import dash
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output,State
 import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
+from dash_extensions import Download
+from dash_extensions.snippets import send_data_frame
 
 df = pd.read_csv('BQ-Assignment-Data-Analytics.csv')
 
@@ -78,7 +80,7 @@ for i in range(len(fd['Item'])):
 fd = fd[['Item Type','Item', 'Item Sort Order', 'Jan-20', 'Feb-20','Mar-20','Apr-20','May-20']]
 
 app = dash.Dash(__name__)
-
+app = dash.Dash(prevent_initial_callbacks=True)
 app.layout = html.Div([
     dash_table.DataTable(
         id='datatable-interactivity',
@@ -108,7 +110,12 @@ app.layout = html.Div([
            value='Select All'
        ),
     
-    html.Div(id='datatable-interactivity-container')
+    html.Div(id='datatable-interactivity-container'),
+    html.Br(),
+    html.Button("Download csv File Of Data", id="btn"), Download(id="download"),
+    html.Td(),
+    html.Br(),
+    html.Button("Download xlsx File Of Data", id="btn1"), Download(id="download1")
 ])
 @app.callback(
     Output('datatable-interactivity', 'data'),
@@ -158,6 +165,32 @@ def update_graphs(derived_virtual_selected_rows,selected_columns):
     } for i in selected_columns]
 
     return row1 + column1
+@app.callback(Output("download", "data"),
+            [Input("btn", "n_clicks")],
+            [State('radioitem', 'value')])
+def func(n_nlicks,radio_value):
+    if radio_value=='Fruit':
+        fd1=fd[fd['Item Type']=='Fruit']
+        return send_data_frame(fd1.to_csv, "Fruit.csv", index=False)
+    elif radio_value=='Vegitable':
+        fd2=fd[fd['Item Type']=='Vegitable']
+        return send_data_frame(fd2.to_csv, "Vegitable.csv", index=False)
+    else:
+        return send_data_frame(fd.to_csv, "All_Data.csv", index=False)
+@app.callback(Output("download1", "data"),
+            [Input("btn1", "n_clicks")],
+            [State('radioitem', 'value')])
+def func(n_nlicks,radio_value):
+    if radio_value=='Fruit':
+        fd1=fd[fd['Item Type']=='Fruit']
+        return send_data_frame(fd1.to_excel, "Fruit.xlsx", index=False)
+    elif radio_value=='Vegitable':
+        fd2=fd[fd['Item Type']=='Vegitable']
+        return send_data_frame(fd2.to_excel, "Vegitable.xlsx", index=False)
+    else:
+        return send_data_frame(fd.to_excel, "All_Data.xlsx", index=False)
+
+
      
 if __name__ == '__main__':
     app.run_server(debug=True)
